@@ -73,6 +73,8 @@ void Scheduler_recieveNewProcess(void *container)
                 break; // no process arrived
             }
             push(recProcess.process);
+            Scheduler_processStart(&recProcess.process);
+            Scheduler_processStop(index);
             processNumbers--;
         } while (recProcess.process.processNumber != last);
     }
@@ -119,8 +121,9 @@ int Scheduler_processStart(process_par *newProcess)
     return pid;
 }
 
-void Scheduler_processResume(int pid, int processNumber)
-{
+void Scheduler_processResume(int processNumber)
+{   
+    int pid=processTable[processNumber].pid;
     kill(pid, SIGCONT);
     // To Do :Update the PCB
     processTable[processNumber].waitingTime += processTable[processNumber].lastTimeStopped - getClk();
@@ -128,8 +131,9 @@ void Scheduler_processResume(int pid, int processNumber)
     processTable[processNumber].lastTimeStartted = getClk();
 }
 
-void Scheduler_processStop(int pid, int processNumber)
-{
+void Scheduler_processStop( int processNumber)
+{   
+    int pid=processTable[processNumber].pid;
     kill(pid, SIGTSTP);
     // To Do :Update The PCB
     processTable[processNumber].lastTimeStopped = getClk();
@@ -157,8 +161,9 @@ void Scheduler_HPF()
         }
         p = top();
         pop();
+        int i=p.processNumber;
         // call the function that will execute the process here.
-        Scheduler_processStart(&p);
+        Scheduler_processResume(i);
         wait(&stat_loc);
         // printf("%d %d %d %d\n",p.processNumber,p.arrival_time,p.runtime,p.priority);
         // call the function that will execute the process hear.
