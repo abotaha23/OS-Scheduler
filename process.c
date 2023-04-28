@@ -51,7 +51,7 @@ int main(int agrc, char * argv[])
     signal(SIGTSTP,Process_stop);
     //TODO it needs to get the remaining time from somewhere
      runTime =atoi(argv[1]);
-    printf("first is %d\n",runTime);
+    // printf("first is %d\n",runTime);
     startTime=getClk();
     remainingtime=runTime;
     
@@ -59,7 +59,7 @@ int main(int agrc, char * argv[])
     {   
         int elapse=getClk()-startTime;
         remainingtime = runTime -elapse;
-        printf("Remaining time is %d\n",remainingtime);
+        // printf("Remaining time is %d\n",remainingtime);
     }
     
     destroyClk(false);
