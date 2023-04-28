@@ -187,7 +187,13 @@ void Scheduler_RR(int quantumS)
       Queue_pop(&tempQ);
     }
 
-    if(isEmpty(&left)) continue;
+    if(isEmpty(&left) && isEmpty(&ran)) continue;
+    else if(isEmpty(&left) && !isEmpty(&ran)){
+      while(!isEmpty(&ran)){
+        Queue_push(&left, Queue_peek(&ran));
+        Queue_pop(&ran);
+      }
+    }
 
     process_par* toRun = (process_par*) Queue_peek(&left);
     int clk = getClk();
@@ -199,8 +205,9 @@ void Scheduler_RR(int quantumS)
     Scheduler_processResume(pid, processNumber);
     while(getClk() - clk <= quantum);
     Scheduler_processStop(pid, processNumber);
+    Queue_push(&ran, toRun);
   }
-  
+
 }
 
 /*******************************************************************************
