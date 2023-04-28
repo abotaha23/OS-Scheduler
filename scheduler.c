@@ -170,6 +170,39 @@ void Scheduler_HPF()
     } while (processNumbers);
 }
 
+void Scheduler_RR(int quantumS)
+{
+  queue left, ran;
+  Queue_init(&left);
+  Queue_init(&ran);
+
+
+  while (true) {
+    queue tempQ;
+    Queue_init(&tempQ);
+    Scheduler_recieveNewProcess(&tempQ);
+
+    while(!isEmpty(&tempQ)){
+      Queue_push(&left, Queue_peek(&tempQ));
+      Queue_pop(&tempQ);
+    }
+
+    if(isEmpty(&left)) continue;
+
+    process_par* toRun = (process_par*) Queue_peek(&left);
+    int clk = getClk();
+
+    int quantum = ( toRun->runtime > quantumS ? quantumS : toRun->runtime );
+    int processNumber = toRun->processNumber;
+    int pid = processTable[processNumber].pid;
+
+    Scheduler_processResume(pid, processNumber);
+    while(getClk() - clk <= quantum);
+    Scheduler_processStop(pid, processNumber);
+  }
+  
+}
+
 /*******************************************************************************
  *                      main function
  ********************************************************************************/
