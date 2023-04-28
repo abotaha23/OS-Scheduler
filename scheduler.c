@@ -56,34 +56,6 @@ void Scheduler_init(int count, SCHEDULING_ALGORITHM s, int chunk)
  * Descritption:checks if there is a new process arrived from the process
  * generator and if so it pushes it in your data structure passed
 */
-void Scheduler_recieveNewProcess(void *container)
-{
-
-    if (Scheduler == HPF || Scheduler == SRTN)
-    {
-        int *processQueue = (int *)container;
-        int last = -1;
-        recProcess.process.processNumber = -1;
-        do
-        {
-            last = recProcess.process.processNumber;
-            rec_val = msgrcv(msgq_id, &recProcess, sizeof(recProcess.process), 0, !IPC_NOWAIT);
-            if (recProcess.process.processNumber == last)
-            {
-                break; // no process arrived
-            }
-            push(recProcess.process);
-            Scheduler_processStart(&recProcess.process);
-            Scheduler_processStop(index);
-            processNumbers--;
-        } while (recProcess.process.processNumber != last);
-    }
-    else
-    {
-        // RR
-        /*To Do : implement the same logic*/
-    }
-}
 
 /**
  * fork the process
@@ -121,6 +93,42 @@ int Scheduler_processStart(process_par *newProcess)
     return pid;
 }
 
+
+
+
+void Scheduler_recieveNewProcess(void *container)
+{
+
+    if (Scheduler == HPF || Scheduler == SRTN)
+    {   
+        // printf("Hello from the function\n");
+        int *processQueue = (int *)container;
+        int last = -1;
+        recProcess.process.processNumber = -1;
+        while(1)
+        {
+            last = recProcess.process.processNumber;
+            rec_val = msgrcv(msgq_id, &recProcess, sizeof(recProcess.process), 0, IPC_NOWAIT);
+            if (recProcess.process.processNumber == last)
+            {
+                break; // no process arrived
+            }
+            push(recProcess.process);
+            Scheduler_processStart(&recProcess.process);
+            kill(processTable[index-1].pid,SIGTSTP);
+            // printf("%d\n",curSize);
+            processNumbers--;
+        } 
+    }
+    else
+    {
+        // RR
+        /*To Do : implement the same logic*/
+    }
+}
+
+
+
 void Scheduler_processResume(int processNumber)
 {   
     int pid=processTable[processNumber].pid;
@@ -151,9 +159,11 @@ void Scheduler_HPF()
     // int curSize = 0;
     // process_par heap[MAXSIZE];
     process_par p;
+    int j=processNumbers;
     // just checking that every thing is okey.
     do
-    {
+    {   
+        // printf("Hello HPF\n");
         Scheduler_recieveNewProcess((void *)heap);
         if (curSize == 0)
         {
@@ -163,16 +173,18 @@ void Scheduler_HPF()
         pop();
         int i=p.processNumber;
         // call the function that will execute the process here.
+        printf("Process Number %d will run at time %d\n",i,getClk());// these prints are just for the sense of testing 
         Scheduler_processResume(i);
         wait(&stat_loc);
+         printf("Process Number %d finished at time %d\n",i,getClk());
         // printf("%d %d %d %d\n",p.processNumber,p.arrival_time,p.runtime,p.priority);
         // call the function that will execute the process hear.
-
+        
         // check if any process has come ans put it in the PQ
         // ofcourse its not the real implementation of the logic but
         // it's just temporary and will be replaced later.
-
-    } while (processNumbers);
+        j--;
+    } while (j);
 }
 
 /*******************************************************************************
@@ -188,6 +200,7 @@ int main(int argc, char *argv[])
         switch(Scheduler){
         case HPF:
         //call the function of the HPF Algorithm
+        
         Scheduler_HPF();
         break;
         case SRTN:
@@ -212,7 +225,9 @@ int main(int argc, char *argv[])
     
     // Scheduler_processResume(x, p.processNumber);
     // waitpid(x, &stat_loc, 0);
-
+    // sleep(4);
+    // Scheduler_recieveNewProcess((void*)heap);
+    // printf("%d\n",curSize);
     // int nowID=-2;
     // in main program we cannot have the number of processes in scheduler so relace it
     // replace it with while process id !=-1
