@@ -159,13 +159,13 @@ int Scheduler_processStart(process_par* newProcess);
  * inpts : the pid of the process  (pid is the id that returnd when forking a process)
  * don't conflict between the pid and the id of the text file
 */
-void Scheduler_processResume(int pid,int processNumber);
+void Scheduler_processResume(int processNumber);
 /**
  * stop a running Process
  * inpts : the pid of the process  (pid is the id that returnd when forking a process)
  * don't conflict between the pid and the id of the text file
 */
-void Scheduler_processStop(int pid,int processNumber);
+void Scheduler_processStop(int processNumber);
 
 /*******************************************************************************
  *                      Main Algorithms                                   *
