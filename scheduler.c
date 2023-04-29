@@ -80,10 +80,12 @@ int Scheduler_processStart(process_par *newProcess)
     if (pid == 0)
     { // child process
         char *runTime = malloc(sizeof(char));
+        char *processNum = malloc(sizeof(char));
         snprintf(runTime, sizeof(runTime), "%d", newProcess->runtime);
-        char *processFile[] = {"./process", runTime, NULL}; // arguments for execv
-        execv(processFile[0], processFile);                 // execute the child process
-        fprintf(stderr, "Exec failed\n");                   // execv only returns if it fails
+        snprintf(processNum, sizeof(processNum), "%d", newProcess->processNumber);
+        char *processFile[] = {"./process", runTime, processNum, NULL}; // arguments for execv
+        execv(processFile[0], processFile);                             // execute the child process
+        fprintf(stderr, "Exec failed\n");                               // execv only returns if it fails
         exit(1);
     }
     processTable[index].arrival_time = newProcess->arrival_time;
@@ -139,7 +141,9 @@ void Scheduler_recieveNewProcess(void *container)
             {
                 break; // no process arrived
             }
-            Queue_push(processQueue, (void *)(&recProcess.process));
+            process_par* p=malloc(sizeof(process_par));
+            *p=recProcess.process;
+            Queue_push(processQueue, p);
             Scheduler_processStart(&recProcess.process);
             kill(processTable[index - 1].pid, SIGTSTP);
             // printf("%d\n",curSize);
@@ -153,7 +157,7 @@ void Scheduler_processResume(int processNumber)
     int pid = processTable[processNumber].pid;
     kill(pid, SIGCONT);
     // To Do :Update the PCB
-    processTable[processNumber].waitingTime += processTable[processNumber].lastTimeStopped - getClk();
+    processTable[processNumber].waitingTime -= processTable[processNumber].lastTimeStopped - getClk();
     processTable[processNumber].status = RUNNING;
     processTable[processNumber].lastTimeStartted = getClk();
 }
@@ -165,7 +169,7 @@ void Scheduler_processStop(int processNumber)
     // To Do :Update The PCB
     processTable[processNumber].lastTimeStopped = getClk();
     processTable[processNumber].status = WAITING;
-    processTable[processNumber].remainingTime -= processTable[processNumber].lastTimeStartted - getClk();
+    processTable[processNumber].remainingTime -= getClk()-processTable[processNumber].lastTimeStartted;
 }
 
 // void Scheduler_generateOutputFiles()
@@ -190,15 +194,18 @@ void Scheduler_processStop(int processNumber)
 //             fprintf(Scheduler_file, "At time %d process %d resumed total %d remain %d wait %d\n", e.time, processNumber, processTable[processNumber].excutionTime, e.remainingTime, e.waitingTime);
 //             break;
 //         case PROCESS_FINISHED:
-//         int TA=processTable[processNumber].startTime-processTable[processNumber].arrival_time;
-//         float WTA=((float)TA)/processTable[processNumber].excutionTime;
-//         float near=
-//             fprintf(Scheduler_file, "At time %d process %d finished total %d remain 0 wait %d TA %d WTA %d\n", e.time, processNumber, processTable[processNumber].excutionTime, e.waitingTime,);
+//             int turnAround = processTable[processNumber].finishTime - processTable[processNumber].arrival_time;
+//             float weightedTurnAround = ((float)turnAround) / processTable[processNumber].excutionTime;
+//             float near = round(weightedTurnAround * 100) / 100;
+//             processTable[processNumber].TA = turnAround;
+//             processTable[processNumber].WTA = weightedTurnAround;
+//             fprintf(Scheduler_file, "At time %d process %d finished total %d remain 0 wait %d TA %d WTA %d\n", e.time, processNumber, processTable[processNumber].excutionTime, e.waitingTime, near);
 //             break;
 //         }
+
 //     }
 
-//     fclose(fp);
+//     fclose(Scheduler_file);
 //     // To DO: Handle scheduler.pref file
 //     //  Scheduler_file = fopen("Scheduler.perf", "w");
 // }
@@ -235,6 +242,63 @@ void Scheduler_HPF()
     } while (j);
 }
 
+void Scheduler_RR()
+{// 1 2 3 4 5 
+    queue left, ran;
+    Queue_init(&left);
+    Queue_init(&ran);
+
+    while (true)
+    {
+        queue tempQ;
+        Queue_init(&tempQ);
+        Scheduler_recieveNewProcess((void*)&tempQ);
+        // int cnt=0;
+        // while (!isEmpty(&tempQ))
+        // {
+        //     process_par p=*((process_par*)Queue_peek(&tempQ));
+        //     printf("%d \n",p.processNumber);
+        //     Queue_push(&left,Queue_peek(&tempQ));
+        //     Queue_pop(&tempQ);
+        //     printf("%d\n",cnt);
+        //     cnt++;
+        // }
+
+        if (isEmpty(&left) && isEmpty(&ran))
+            continue;
+        else if (isEmpty(&left) && !isEmpty(&ran))
+        {
+            while (!isEmpty(&ran))
+            {
+                Queue_push(&left, Queue_peek(&ran));
+                Queue_pop(&ran);
+            }
+        }
+
+        process_par *toRun = (process_par *)Queue_peek(&left);
+        printf("Now will run process %d\n",toRun->processNumber);
+        Queue_pop(&left);
+        printf("d");
+        // if(processTable[toRun->processNumber].remainingTime<=0){
+        //     continue;
+        // }
+        int clk = getClk();
+        int processNumber = toRun->processNumber;
+        int quantum = (processTable[processNumber].remainingTime> timeChunk ? timeChunk :processTable[processNumber].remainingTime);
+        int pid = processTable[processNumber].pid;
+        printf("At time %d Process %d ran remaining is %d\n",getClk(),processNumber,processTable[processNumber].remainingTime);
+        Scheduler_processResume(processNumber);
+        while (getClk() - clk < quantum)
+            ;
+        Scheduler_processStop(processNumber);
+        printf("stopped at %d",getClk());
+        if(processTable[processNumber].remainingTime>0)
+        {
+        Queue_push(&ran, (void*)toRun);
+        }
+    }
+}
+
 /*******************************************************************************
  *                      main function
  ********************************************************************************/
@@ -243,6 +307,7 @@ int main(int argc, char *argv[])
     initClk();
     Scheduler_init(atoi(argv[2]), atoi(argv[1]), atoi(argv[3]));
     printf("%d\n", processNumbers);
+    printf("%d\n",atoi(argv[3]));
     recProcess.process.processNumber = -1;
     // // printf("Arguments=%d\nRecieved Chunk =%d\n",argc,timeChunk);
     switch (Scheduler)
@@ -257,8 +322,23 @@ int main(int argc, char *argv[])
         break;
     case RR:
         // call the function of the RR Algorithm
+        Scheduler_RR();
         break;
     }
+
+// queue q;
+// Queue_init(&q);
+// for(int i=0;i<5;i++){
+//     int* val = malloc(sizeof(int));
+//     *val = i;
+//     Queue_push(&q, val);
+// }
+
+// for (int i=0;i<5;i++){
+//     printf("%d\n",* ((int*)Queue_peek(&q)));
+//     free(Queue_pop(&q));
+// }
+// Queue_destroy(&q);
 
     // testing the RR recieve new process
     // queue q;
