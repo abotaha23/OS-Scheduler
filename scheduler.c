@@ -322,12 +322,12 @@ void Scheduler_SRTN () {
         
         Scheduler_recieveNewProcess((void *) heap);
         
-        if (fir && curSize == 0)    continue;
+        if (fir && curSize == 0) continue;
         
+        // printf("curSize: %d\n", curSize);
+
         if (fir) {
         
-            printf("first arrival: %d\n", getClk());
-
             running_process = top();
             pop(Scheduler);            
             fir = false;
@@ -354,7 +354,6 @@ void Scheduler_SRTN () {
             
             cur_running_time = getClk() - resuming_time;
             // printf("cur_running_time : %d, top().remainingTime : %d\n", cur_running_time, processTable[top().processNumber].remainingTime);
-            // printf("curSize: %d\n", curSize);
             if (curSize && ((processTable[running_process.processNumber].remainingTime - cur_running_time) > processTable[top().processNumber].remainingTime)) {
                 printf("here\n");
                 Scheduler_processStop(running_process.processNumber);
@@ -367,6 +366,7 @@ void Scheduler_SRTN () {
                 printf("Process Number %d will run at time %d\n", running_process.processNumber, getClk());
                 Scheduler_processResume(running_process.processNumber);
                 resuming_time = getClk();
+                
             }
         }
     } while (cnt);
