@@ -14,11 +14,12 @@
 #define scheduler
 #include "headers.h"
 #define MAXSIZE 200
+#define NOMOREPROCESS -1
 /*******************************************************************************
  *                         Types Declaration                                   *
  *******************************************************************************/
-typedef enum{RUNNING,WAITING,FINISHED}PROCESS_STATUS;
-
+typedef enum{RUNNING,WAITING,FINISHED,NOTSTARTED}PROCESS_STATUS;
+typedef enum{PROCESS_STARTED,PROCESS_STOPPED,PROCESS_RESUMED,PROCESS_FINISHED}EVENT_TYPE;
 
 typedef struct {
 int pid;//process pid that returned from the fork
@@ -32,11 +33,26 @@ int finishTime;
 int priority;
 int lastTimeStopped;//indicator to calculate the waiting time for each process
 int lastTimeStartted;
+int TA;
+int WTA;
 }PCB;
 
 // 2 4 1 0 5 
 //7 8 10 11
 //Queue<processPar> 
+
+typedef struct {
+int processNumber;
+EVENT_TYPE type;
+int waitingTime;
+int remainingTime;
+int time;
+}Event;
+
+
+
+int curSize = 0;
+process_par heap[MAXSIZE];
 
 
 /*******************************************************************************
@@ -50,7 +66,8 @@ msgbuff recProcess;
 int rec_val;
 int stat_loc;
 PCB processTable[MAXSIZE];
-int indexG = 1;         // current index in the processTable
+short flag=false;
+int index = 1;         // current index in the processTable
 short lastProcessFlag; // a flag that indicate the last process that is to be recieved
 // it is updated in the scheduler_recieveNewProcess
 // when the scheduler recieves a process with id = -1 just an indicator
@@ -58,9 +75,11 @@ short lastProcessFlag; // a flag that indicate the last process that is to be re
 queue g_eventQueue;
 
 
+/*******************************************************************************
+ *                     priority Queue implementation                                     *
+ *******************************************************************************/
 
-int curSize = 0;
-process_par heap[MAXSIZE];
+
 
 
 // priority queue functions
@@ -68,7 +87,7 @@ process_par heap[MAXSIZE];
 
 
 // auxiliary fucnctions
-    
+     
 static int parent(int i) 
 {
     return (i-1)/2;
@@ -149,7 +168,6 @@ void push(process_par newP, SCHEDULING_ALGORITHM s)
     }
 }
 
-
 /*******************************************************************************
  *                      Functions Prototypes                                   *
  *******************************************************************************/
@@ -190,14 +208,22 @@ void Scheduler_processResume(int processNumber);
 */
 void Scheduler_processStop(int processNumber);
 
+
+void Scheduler_generateOutputFiles();
+
+
+void Scheduler_processFinishHandler(int signum);
+
 /*******************************************************************************
  *                      Main Algorithms                                   *
  *******************************************************************************/
 
 void Scheduler_HPF();
-// void SRTN();
-// void RR(int chunck);
+void Scheduler_SRTN();
+void Scheduler_RR();
 
 
 
 #endif
+
+
