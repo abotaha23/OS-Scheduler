@@ -326,6 +326,8 @@ void Scheduler_SRTN () {
         
         if (fir) {
         
+            printf("first arrival: %d\n", getClk());
+
             running_process = top();
             pop(Scheduler);            
             fir = false;
@@ -351,8 +353,10 @@ void Scheduler_SRTN () {
             } 
             
             cur_running_time = getClk() - resuming_time;
-            if (curSize && ((running_process.runtime - cur_running_time) > processTable[top().processNumber].remainingTime)) {
-                
+            // printf("cur_running_time : %d, top().remainingTime : %d\n", cur_running_time, processTable[top().processNumber].remainingTime);
+            // printf("curSize: %d\n", curSize);
+            if (curSize && ((processTable[running_process.processNumber].remainingTime - cur_running_time) > processTable[top().processNumber].remainingTime)) {
+                printf("here\n");
                 Scheduler_processStop(running_process.processNumber);
                 printf("Process Number %d stopped at time %d\n", running_process.processNumber, getClk());
                 push(running_process, Scheduler);
@@ -414,7 +418,6 @@ int main(int argc, char *argv[])
     {
     case HPF:
         // call the function of the HPF Algorithm
-
         Scheduler_HPF();
         break;
     case SRTN:
