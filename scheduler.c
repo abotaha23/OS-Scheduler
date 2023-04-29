@@ -105,7 +105,7 @@ void Scheduler_recieveNewProcess(void *container)
             }
             //  printf("nwo time %d and now currSize %d\n ",getClk(),curSize);
             //  sleep(2);
-            push(recProcess.process,Scheduler);
+            push(recProcess.process, Scheduler);
             Scheduler_processStart(&recProcess.process);
             kill(processTable[index - 1].pid, SIGTSTP);
             // printf("%d\n",curSize);
@@ -180,42 +180,42 @@ void Scheduler_processStop(int processNumber)
 }
 
 
-void Scheduler_generateOutputFiles()
-{
-    FILE *Scheduler_file;
-    Scheduler_file = fopen("Scheduler.log", "w");
+// void Scheduler_generateOutputFiles()
+// {
+//     FILE *Scheduler_file;
+//     Scheduler_file = fopen("Scheduler.log", "w");
 
-    while (!isEmpty(&g_eventQueue))
-    {
-        Event e = *((Event *)Queue_pop(&g_eventQueue));
-        int processNumber = e.processNumber;
-        // TO DO: handle the total, remain and wait time after having the data needed
-        switch (e.type)
-        {
-        case PROCESS_STARTED:
-            fprintf(Scheduler_file, "At time %d process %d started total %d remain %d wait %d\n", e.time, processNumber, processTable[processNumber].excutionTime, e.remainingTime, e.waitingTime);
-            break;
+//     while (!isEmpty(&g_eventQueue))
+//     {
+//         Event e = *((Event *)Queue_pop(&g_eventQueue));
+//         int processNumber = e.processNumber;
+//         // TO DO: handle the total, remain and wait time after having the data needed
+//         switch (e.type)
+//         {
+//         case PROCESS_STARTED:
+//             fprintf(Scheduler_file, "At time %d process %d started total %d remain %d wait %d\n", e.time, processNumber, processTable[processNumber].excutionTime, e.remainingTime, e.waitingTime);
+//             break;
 
-        case PROCESS_STOPPED:
-            fprintf(Scheduler_file, "At time %d process %d stopped total %d remain %d wait %d\n", e.time, processNumber, processTable[processNumber].excutionTime, e.remainingTime, e.waitingTime);
-        case PROCESS_RESUMED:
-            fprintf(Scheduler_file, "At time %d process %d resumed total %d remain %d wait %d\n", e.time, processNumber, processTable[processNumber].excutionTime, e.remainingTime, e.waitingTime);
-            break;
-        case PROCESS_FINISHED:
-            int turnAround = processTable[processNumber].finishTime - processTable[processNumber].arrival_time;
-            double weightedTurnAround = ((double)turnAround) / processTable[processNumber].excutionTime;
-            double near = round(weightedTurnAround * 100) / 100;
-            processTable[processNumber].TA = turnAround;
-            processTable[processNumber].WTA = weightedTurnAround;
-            fprintf(Scheduler_file, "At time %d process %d finished total %d remain 0 wait %d TA %d WTA %d\n", e.time, processNumber, processTable[processNumber].excutionTime, e.waitingTime, near);
-            break;
-        }
-    }
+//         case PROCESS_STOPPED:
+//             fprintf(Scheduler_file, "At time %d process %d stopped total %d remain %d wait %d\n", e.time, processNumber, processTable[processNumber].excutionTime, e.remainingTime, e.waitingTime);
+//         case PROCESS_RESUMED:
+//             fprintf(Scheduler_file, "At time %d process %d resumed total %d remain %d wait %d\n", e.time, processNumber, processTable[processNumber].excutionTime, e.remainingTime, e.waitingTime);
+//             break;
+//         case PROCESS_FINISHED:
+//             int turnAround = processTable[processNumber].finishTime - processTable[processNumber].arrival_time;
+//             double weightedTurnAround = ((double)turnAround) / processTable[processNumber].excutionTime;
+//             double near = round(weightedTurnAround * 100) / 100;
+//             processTable[processNumber].TA = turnAround;
+//             processTable[processNumber].WTA = weightedTurnAround;
+//             fprintf(Scheduler_file, "At time %d process %d finished total %d remain 0 wait %d TA %d WTA %d\n", e.time, processNumber, processTable[processNumber].excutionTime, e.waitingTime, near);
+//             break;
+//         }
+//     }
 
-    fclose(Scheduler_file);
-    // To DO: Handle scheduler.pref file
-    //  Scheduler_file = fopen("Scheduler.perf", "w");
-}
+//     fclose(Scheduler_file);
+//     // To DO: Handle scheduler.pref file
+//     //  Scheduler_file = fopen("Scheduler.perf", "w");
+// }
 
 /*******************************************************************************
  *                      Main Algorithms definition                              *
@@ -312,63 +312,60 @@ void Scheduler_RR()
 
 
 void Scheduler_SRTN () {
-  
-  short fir = true;
-  int cnt = processNumbers;
-  process_par running_process;
-    int exc;
-    // int lastClk
-  do {
-    // int lastClk
-    Scheduler_recieveNewProcess((void *)heap);
-    if (fir && curSize == 0) {  // intial enetry in the queue
-      continue;
-    }
-    
-    if (fir) {
-    
-      running_process = top();
-      pop(Scheduler);
-      exc=processTable[running_process.processNumber].remainingTime;
-      
-      fir = false;
-    
-      printf("Process Number %d will run at time %d\n", running_process.processNumber, getClk());
-      Scheduler_processResume(running_process.processNumber);
-    
-    } else {
-    
-      
-    
-    //   printf("%d\n", processTable[running_process.processNumber].status);
-    
-      if (processTable[running_process.processNumber].status ==FINISHED) {
-        printf("Process Number %d finished at time %d\n", running_process.processNumber, getClk());
-        cnt--;
-    
-        if (curSize == 0) continue;
-    
-        running_process = top();
-        pop(Scheduler);
-    // 1 2 3 
-        printf("Process Number %d will run at time %d\n", running_process.processNumber, getClk());
-        Scheduler_processResume(running_process.processNumber);
-      } 
-    
-      if (curSize && processTable[running_process.processNumber].remainingTime > processTable[top().processNumber].remainingTime) {
+
+    short fir = true;
+    int cnt = processNumbers;
+    process_par running_process;
+    int resuming_time, cur_running_time;
+
+    do {
         
-        Scheduler_processStop(running_process.processNumber);
-        printf("Process Number %d stopped at time %d\n", running_process.processNumber, getClk());
-        push(running_process, Scheduler);
+        Scheduler_recieveNewProcess((void *) heap);
         
-        running_process = top();
-        pop(Scheduler);
+        if (fir && curSize == 0)    continue;
         
-        printf("Process Number %d will run at time %d\n", running_process.processNumber, getClk());
-        Scheduler_processResume(running_process.processNumber);
-      }
-    }
-  } while (cnt);
+        if (fir) {
+        
+            running_process = top();
+            pop(Scheduler);            
+            fir = false;
+            
+            printf("Process Number %d will run at time %d\n", running_process.processNumber, getClk());
+            Scheduler_processResume(running_process.processNumber);
+            resuming_time = getClk();
+
+        } else {
+        
+            if (processTable[running_process.processNumber].status == FINISHED) {
+                
+                printf("Process Number %d finished at time %d\n", running_process.processNumber, getClk());
+                cnt--;
+            
+                if (curSize == 0) continue;
+            
+                running_process = top();
+                pop(Scheduler);
+                printf("Process Number %d will run at time %d\n", running_process.processNumber, getClk());
+                Scheduler_processResume(running_process.processNumber);
+                resuming_time = getClk();
+            } 
+            
+            cur_running_time = getClk() - resuming_time;
+            if (curSize && ((running_process.runtime - cur_running_time) > processTable[top().processNumber].remainingTime)) {
+                
+                Scheduler_processStop(running_process.processNumber);
+                printf("Process Number %d stopped at time %d\n", running_process.processNumber, getClk());
+                push(running_process, Scheduler);
+                
+                running_process = top();
+                pop(Scheduler);
+                
+                printf("Process Number %d will run at time %d\n", running_process.processNumber, getClk());
+                Scheduler_processResume(running_process.processNumber);
+                resuming_time = getClk();
+            }
+        }
+    } while (cnt);
 }
 
 /*******************************************************************************
