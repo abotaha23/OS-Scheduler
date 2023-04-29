@@ -39,6 +39,23 @@ int lastTimeStartted;
 //Queue<processPar> 
 
 
+/*******************************************************************************
+ *                     global variables                                    *
+ *******************************************************************************/
+SCHEDULING_ALGORITHM Scheduler;
+int processNumbers; /*Number of processes*/
+int timeChunk;      /*special variable for the case of Round Robin time slite*/
+int msgq_id;        /*msg queue to communicate between the process_generator and the scheduler*/
+msgbuff recProcess;
+int rec_val;
+int stat_loc;
+PCB processTable[MAXSIZE];
+int indexG = 1;         // current index in the processTable
+short lastProcessFlag; // a flag that indicate the last process that is to be recieved
+// it is updated in the scheduler_recieveNewProcess
+// when the scheduler recieves a process with id = -1 just an indicator
+
+queue g_eventQueue;
 
 
 
@@ -70,28 +87,34 @@ static int right(int i)
 // 1--> 1 > 2
 // 0--> 1 == 2
 // -1--> 1 < 2
-static int compare(int idx1, int idx2)
+static int compare(int idx1, int idx2, SCHEDULING_ALGORITHM s)
 {
-    int val1 = heap[idx1].priority;
-    int val2 = heap[idx2].priority;
+    int val1 = 0, val2 = 0;
+    if (s == HPF) {
+        val1 = heap[idx1].priority;
+        val2 = heap[idx2].priority;
+    } else if (s == SRTN) {
+        val1 = processTable[idx1].remainingTime;
+        val2 = processTable[idx2].remainingTime;
+    }
 
     if (val1 > val2) return 1;
     if (val1 == val2) return 0;
     if (val1 < val2) return -1;
 }
 
-static void heapify(int root)
+static void heapify(int root, SCHEDULING_ALGORITHM s)
 {
     int l = left(root), r = right(root);
     int mn = root;
-    if (l < curSize && compare(l, root) == -1) mn = l;
-    if (r < curSize && compare(r, root) == -1) mn = r;
+    if (l < curSize && compare(l, root, s) == -1) mn = l;
+    if (r < curSize && compare(r, root, s) == -1) mn = r;
 
     if (mn != root) {
         process_par tmp = heap[root];
         heap[root] = heap[mn];
         heap[mn] = tmp;
-        heapify(mn);
+        heapify(mn, s);
     }
 }
 
@@ -102,7 +125,7 @@ process_par top()
     return heap[0];
 }
 
-void pop()
+void pop(SCHEDULING_ALGORITHM s)
 {
     if (curSize == 1) {
         curSize--;
@@ -110,15 +133,15 @@ void pop()
     }
     heap[0] = heap[curSize-1];
     curSize--;
-    heapify(0);
+    heapify(0, s);
 }
 
-void push(process_par newP)
+void push(process_par newP, SCHEDULING_ALGORITHM s)
 {
     curSize++;
     heap[curSize-1] = newP;
     int pos = curSize-1;
-    while(pos > 0 && compare(pos, parent(pos)) == -1) {
+    while(pos > 0 && compare(pos, parent(pos), s) == -1) {
         process_par tmp = heap[parent(pos)];
         heap[parent(pos)] = heap[pos];
         heap[pos] = tmp;
@@ -178,5 +201,3 @@ void Scheduler_HPF();
 
 
 #endif
-
-
