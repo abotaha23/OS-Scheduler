@@ -307,10 +307,6 @@ void Scheduler_RR()
     }
 }
 
-
-
-
-
 void Scheduler_SRTN () {
 
     short fir = true;
@@ -324,8 +320,6 @@ void Scheduler_SRTN () {
         
         if (fir && curSize == 0) continue;
         
-        // printf("curSize: %d\n", curSize);
-
         if (fir) {
         
             running_process = top();
@@ -353,9 +347,9 @@ void Scheduler_SRTN () {
             } 
             
             cur_running_time = getClk() - resuming_time;
-            // printf("cur_running_time : %d, top().remainingTime : %d\n", cur_running_time, processTable[top().processNumber].remainingTime);
+ 
             if (curSize && ((processTable[running_process.processNumber].remainingTime - cur_running_time) > processTable[top().processNumber].remainingTime)) {
-                printf("here\n");
+
                 Scheduler_processStop(running_process.processNumber);
                 printf("Process Number %d stopped at time %d\n", running_process.processNumber, getClk());
                 push(running_process, Scheduler);
@@ -502,3 +496,4 @@ int main(int argc, char *argv[])
 
     destroyClk(true);
 }
+
