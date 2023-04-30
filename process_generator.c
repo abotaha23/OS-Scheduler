@@ -176,7 +176,7 @@ int main(int argc, char * argv[])
     // destroyClk(true);
 
 
-    wait(&stat_loc);
+    waitpid(Scheduler_pid,&stat_loc,WUNTRACED);
     //TODO clear the resources
 
   
