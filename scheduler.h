@@ -115,6 +115,7 @@ static int compare(int idx1, int idx2, SCHEDULING_ALGORITHM s)
     } else if (s == SRTN) {
         val1 = processTable[idx1].remainingTime;
         val2 = processTable[idx2].remainingTime;
+        // printf("%d %d\n",val1,val2);
     }
 
     if (val1 > val2) return 1;
