@@ -1,5 +1,5 @@
 #i d a r r i v a l runtime p r i o r i t y
-1 1 6 5
-2 3 3 3
-4 2 3 5
-6 3 8 4
+1 1 7 2
+2 3 4 5
+3 3 3 1
+4 3 1 3

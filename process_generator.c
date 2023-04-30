@@ -30,9 +30,9 @@
 void clearResources(int signum)
 {
     //TODO Clears all resources in case of interruption
-	 msgctl(msgq_id, IPC_RMID, (struct msqid_ds *)0);
+	msgctl(msgq_id, IPC_RMID, (struct msqid_ds *)0);
 	 //To Do : call the Destructor of the process queue
-	 Queue_destroy(&process_queue);
+	Queue_destroy(&process_queue);
 }
 
 /*******************************************************************************
@@ -74,8 +74,8 @@ int main(int argc, char * argv[])
      process_par p;
 
     processNumbers=0;
-            // printf("%d %d %d %d",p.process_id,p.arrival_time,p.runtime,p.priority);
-    while (fscanf(input_file, "%d %d %d %d", &p.process_id, &p.arrival_time, &p.runtime, &p.priority) == 4){
+            // printf("%d %d %d %d",p.processNumber,p.arrival_time,p.runtime,p.priority);
+    while (fscanf(input_file, "%d %d %d %d", &p.processNumber, &p.arrival_time, &p.runtime, &p.priority) == 4){
         process_par *ptr=malloc(sizeof(process_par));
         *ptr=p;
         Queue_push(&process_queue,(void*)ptr);
@@ -105,29 +105,30 @@ int main(int argc, char * argv[])
     }
     // 3. Initiate and create the scheduler and clock processes.
     printf("Number of proccess =%d\nAlgorithm :%d\n",processNumbers,scheduling_algorithm);
-    int Scheduler_pid=fork();
     int Clock_pid=fork();
-    while (Clock_pid < 0) { // error occurred
-    	Clock_pid=fork();
-           }
+    if(Clock_pid<0){
+        perror("Error in forking the Clock Process\n");
+        exit(1);
+    }
 		if (Clock_pid == 0) { // child process
        char *Clock_file[] = {"./clk", NULL}; // arguments for execv
        execv(Clock_file[0], Clock_file); // execute the child process
        fprintf(stderr, "Exec failed\n"); // execv only returns if it fails
        exit(1);
-   }
-
-    while (Scheduler_pid < 0) { // error occurred
-    	Scheduler_pid=fork();
-       }
+   }  
+    int Scheduler_pid=fork();
+    if(Scheduler_pid<0){
+        perror("Error in forking the Scheduler Process\n");
+        exit(1);
+    }
        	if (Scheduler_pid == 0) { // child process
             char* buff=malloc(sizeof(char));//we need to free these memory
             char* len=malloc(sizeof(char));
             char* timeChunk=malloc(sizeof(char));
             int x=scheduling_algorithm;
             snprintf(buff,sizeof(buff),"%d",x);
-            snprintf(len,sizeof(buff),"%d",processNumbers);
-            snprintf(timeChunk,sizeof(buff),"%d",time_chunk);
+            snprintf(len,sizeof(len),"%d",processNumbers);
+            snprintf(timeChunk,sizeof(timeChunk),"%d",time_chunk);
            char *Scheduler_file[] = {"./scheduler",buff,len,timeChunk,NULL}; // arguments for execv
             
            execv(Scheduler_file[0], Scheduler_file); // execute the child process
@@ -145,10 +146,13 @@ int main(int argc, char * argv[])
     // printf("current time is %d\n", x);
 
     // TODO Generation Main Loop
-
+    int lastClk=-1;
     while (!isEmpty(&process_queue)) {
-       p = *((process_par*)Queue_peek(&process_queue));
+        // if(lastClk==getClk()){
+        //     continue;
+        // }   
        int cur_time = getClk();
+       p = *((process_par*)Queue_peek(&process_queue));
 //    6. Send the information to the scheduler at the appropriate time.
        if (cur_time >= p.arrival_time) {
         //    send process to scheduler
@@ -160,6 +164,8 @@ int main(int argc, char * argv[])
         if (send_val == -1)
         perror("Errror in send");
         Queue_pop(&process_queue);
+       }else{
+        lastClk=cur_time;
        }
    }
 
@@ -170,7 +176,7 @@ int main(int argc, char * argv[])
     // destroyClk(true);
 
 
-
+    waitpid(Scheduler_pid,&stat_loc,WUNTRACED);
     //TODO clear the resources
 
   
