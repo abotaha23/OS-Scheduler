@@ -69,21 +69,21 @@ int main(int argc, char * argv[])
     }
     fclose(input_file);
 
-    printf("Choose one of the following algorithms to use:\n"
-           "0.Non-preemptive Highest Priority First (HPF).\n"
+    printf("0.Non-preemptive Highest Priority First (HPF).\n"
            "1.Shortest Remaining time Next (SRTN).\n"
-           "2.Round Robin (RR).\n");
+           "2.Round Robin (RR).\n"
+           "Choose one of the algorithms to use: ");
 
     SCHEDULING_ALGORITHM scheduling_algorithm = 0;
     int x;
     scanf("%d",&x);
-    scheduling_algorithm=x;
+    scheduling_algorithm = x;
     int time_chunk = -1;
     if (scheduling_algorithm == RR) {
         printf("Enter the time chunk for each process to run RR algorithm:");
         scanf("%d",&time_chunk);
     }
-    printf("Number of proccess =%d\nAlgorithm :%d\n",processNumbers,scheduling_algorithm);
+    printf("Number of proccess = %d\nAlgorithm : %d\n",processNumbers,scheduling_algorithm);
 
     int Clock_pid=fork();
     if(Clock_pid<0){

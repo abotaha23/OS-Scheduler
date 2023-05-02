@@ -29,15 +29,13 @@ int processNumber;
  *******************************************************************************/
 
 void Process_resume(int signum){
-    startTime=getClk();
-        // printf("process will continue now %d\n",getClk());
+    startTime = getClk();
 }
 
 void Process_stop(int signum){
-    // printf("process will stop now %d\n",getClk());
-    if(signum==SIGTSTP){
-    runTime=remainingtime;
-    raise(SIGSTOP);
+    if (signum == SIGTSTP){
+        runTime = remainingtime;
+        raise(SIGSTOP);
     }
 }
 
@@ -51,15 +49,15 @@ int main(int agrc, char * argv[])
     signal(SIGCONT,Process_resume);
     signal(SIGTSTP,Process_stop);
 
-    runTime =atoi(argv[1]);
-    processNumber=atoi(argv[2]);
-    startTime=getClk();
-    remainingtime=runTime;
+    runTime = atoi(argv[1]);
+    processNumber = atoi(argv[2]);
+    startTime = getClk();
+    remainingtime = runTime;
 
-    while (remainingtime>0)
+    while (remainingtime > 0)
     {
-        int elapse=getClk()-startTime;
-        remainingtime = runTime -elapse;
+        int elapse = getClk()- startTime;
+        remainingtime = runTime - elapse;
     }
 
     destroyClk(false);

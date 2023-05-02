@@ -163,7 +163,8 @@ void Scheduler_processStop(int processNumber)
 void Scheduler_generateOutputFiles()
 {
     FILE *Scheduler_file;
-    Scheduler_file = fopen("Scheduler.log", "w");
+    
+    Scheduler_file = fopen("scheduler.log", "w");
     while (!isEmpty(&g_eventQueue))
     {
         Event e = *((Event *)Queue_pop(&g_eventQueue));
@@ -190,6 +191,22 @@ void Scheduler_generateOutputFiles()
             break;
         }
     }
+    fclose(Scheduler_file);
+
+    Scheduler_file = fopen("scheduler.perf", "w");
+    double cpu_util = 100, avg_WTA = 0, avg_waiting = 0, std_WTA = 0;
+    for (int i = 0; i < processNumbers; i++) {
+        // TODO : calculate the CPU Utilization.. needs update PCB
+        avg_WTA += (((double)processTable[i].WTA) / ((double)processNumbers));
+        avg_waiting += (((double)processTable[i].waitingTime) / ((double)processNumbers));
+    }
+    fprintf(Scheduler_file, "CPU Utilization = %d.%02d%\n", (int)cpu_util, (int)round((cpu_util - (int)cpu_util) * 100));
+    fprintf(Scheduler_file, "Avg WTA = %d.%02d\n", (int)avg_WTA, (int)round((avg_WTA - (int)avg_WTA) * 100));
+    fprintf(Scheduler_file, "Avg Waiting = %d.%02d\n", (int)avg_waiting, (int)round((avg_waiting - (int)avg_waiting) * 100));
+    for (int i = 0; i < processNumbers; i++) {
+        std_WTA += (((double)(processTable[i].WTA - avg_WTA)) / ((double)(processNumbers - 1)));
+    }
+    fprintf(Scheduler_file, "Std WTA = %d.%02d\n", (int)std_WTA, (int)round((std_WTA - (int)std_WTA) * 100));
     fclose(Scheduler_file);
 }
 
@@ -234,7 +251,6 @@ void Scheduler_RR()
 
         while (!isEmpty(&tempQ)) {
             process_par p=*((process_par*)Queue_peek(&tempQ));
-            printf("%d \n",p.processNumber);
             Queue_push(&left,Queue_peek(&tempQ));
             Queue_pop(&tempQ);
         }
@@ -268,40 +284,40 @@ void Scheduler_RR()
 }
 
 void Scheduler_SRTN () {
-    short isRun=false;
+    short isRun = false;
     int cnt = processNumbers;
     process_par lastRun; //here this is indicating the lastRun process
-    while(curSize==0){
+    while(curSize == 0){
         Scheduler_recieveNewProcess((void*)heap);
     }
     process_par p = top();
     pop(Scheduler);
-    isRun=true;
-    lastRun=p;
+    isRun = true;
+    lastRun = p;
     printf("Process Number %d will run at time %d\n",lastRun.processNumber,getClk());
     Scheduler_processResume(lastRun.processNumber);
-    int lastClk=getClk();
+    int lastClk = getClk();
     do {
-        if(curSize==0&&!isRun){
+        if(curSize == 0 && !isRun){
             Scheduler_recieveNewProcess((void*)heap);
             continue;
         }
-        if(lastClk!=getClk()){
-            lastClk=getClk();
+        if(lastClk != getClk()){
+            lastClk = getClk();
             processTable[lastRun.processNumber].remainingTime--;
         }
         Scheduler_recieveNewProcess((void*)heap);
-        if(curSize!=0){
-            p=top();
+        if(curSize != 0){
+            p = top();
             pop(Scheduler);
         }
-        if(isRun&&processTable[p.processNumber].remainingTime>=processTable[lastRun.processNumber].remainingTime) {
-                if(p.processNumber!=lastRun.processNumber)
+        if(isRun && processTable[p.processNumber].remainingTime >= processTable[lastRun.processNumber].remainingTime) {
+            if(p.processNumber != lastRun.processNumber)
                 push(p,Scheduler);
-            if(processTable[lastRun.processNumber].status==FINISHED){
+            if(processTable[lastRun.processNumber].status == FINISHED) {
                 printf("Process Number %d finished at time %d\n",lastRun.processNumber,getClk());
                 cnt--;
-                isRun=false;
+                isRun = false;
             }
         }
         else{
@@ -311,10 +327,10 @@ void Scheduler_SRTN () {
                 printf("Process Number %d stopped at time %d\n",lastRun.processNumber,getClk());
                 push(lastRun,Scheduler);
             }
-            lastRun=p;
+            lastRun = p;
             printf("Process Number %d will run at time %d\n",lastRun.processNumber,getClk());
             Scheduler_processResume(lastRun.processNumber);
-            isRun=true;
+            isRun = true;
         }
     } while (cnt);
 }
@@ -326,16 +342,16 @@ void Scheduler_SRTN () {
 void Scheduler_processFinishHandler(int signum)
 {   
     wait(&stat_loc);
-    flag =true;
-    int pNumber=stat_loc>>8;
+    flag = true;
+    int pNumber = stat_loc>>8;
     processTable[pNumber].status=FINISHED;
     processTable[pNumber].finishTime=getClk();
-    Event* e =malloc(sizeof(Event));
-    e->processNumber=pNumber;
-    e->remainingTime=0;
-    e->time=getClk();
-    e->type=PROCESS_FINISHED;
-    e->waitingTime=processTable[pNumber].waitingTime;
+    Event* e = malloc(sizeof(Event));
+    e->processNumber = pNumber;
+    e->remainingTime = 0;
+    e->time = getClk();
+    e->type = PROCESS_FINISHED;
+    e->waitingTime = processTable[pNumber].waitingTime;
     Queue_push(&g_eventQueue,e);
 }
 
@@ -347,8 +363,6 @@ int main(int argc, char *argv[])
 {
     initClk();
     Scheduler_init(atoi(argv[2]), atoi(argv[1]), atoi(argv[3]));
-    printf("%d\n", processNumbers);
-    printf("%d\n", atoi(argv[3]));
     recProcess.process.processNumber = -1;
     switch (Scheduler)
     {
@@ -362,6 +376,7 @@ int main(int argc, char *argv[])
         Scheduler_RR();
         break;
     }
+    Scheduler_generateOutputFiles();
     destroyClk(true);
 }
 
