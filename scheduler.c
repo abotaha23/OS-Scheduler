@@ -292,58 +292,85 @@ void Scheduler_RR()
     Queue_destroy(&ran);
 }
 
-void Scheduler_SRTN () {
+void Scheduler_SRTN()
+{
     short isRun = false;
     int cnt = processNumbers;
-    process_par lastRun; //here this is indicating the lastRun process
-    while(curSize == 0){
-        Scheduler_recieveNewProcess((void*)heap);
+    process_par lastRun; // here this is indicating the lastRun process
+    while (curSize == 0)
+    {
+        Scheduler_recieveNewProcess((void *)heap);
     }
     process_par p = top();
     pop(Scheduler);
     isRun = true;
     lastRun = p;
-    printf("Process Number %d will run at time %d\n",lastRun.processNumber,getClk());
+    int ranAt = getClk();
+    //printf("Process Number %d will run at time %d\n", lastRun.processNumber, getClk());
     Scheduler_processResume(lastRun.processNumber);
+
     int lastClk = getClk();
-    do {
-        if(curSize == 0 && !isRun){
-            Scheduler_recieveNewProcess((void*)heap);
+
+    do
+    {
+        if (curSize == 0 && !isRun)
+        {
+            Scheduler_recieveNewProcess((void *)heap);
             continue;
         }
-        if(lastClk != getClk()){
+        if (lastClk != getClk())
+        {
             lastClk = getClk();
             processTable[lastRun.processNumber].remainingTime--;
         }
-        Scheduler_recieveNewProcess((void*)heap);
-        if(curSize != 0){
+        Scheduler_recieveNewProcess((void *)heap);
+        if (curSize != 0)
+        {
             p = top();
             pop(Scheduler);
         }
-        if(isRun && processTable[p.processNumber].remainingTime >= processTable[lastRun.processNumber].remainingTime) {
-            if(p.processNumber != lastRun.processNumber)
-                push(p,Scheduler);
-            if(processTable[lastRun.processNumber].status == FINISHED) {
-                printf("Process Number %d finished at time %d\n",lastRun.processNumber,getClk());
+        // printf("%d\n",processTable[lastRun].remainingTime);
+        // printf("At time %d top is %d\n",getClk(),p.processNumber);
+        if (isRun && processTable[p.processNumber].remainingTime >= processTable[lastRun.processNumber].remainingTime)
+        {
+            // continue running s
+            //  printf("%d\n",processTable[lastRun].remainingTime);
+            //  push(p,Scheduler);
+            if (p.processNumber != lastRun.processNumber)
+                push(p, Scheduler);
+            if (processTable[lastRun.processNumber].status == FINISHED)
+            {
+                printf("Process Number %d will run at time %d\n", lastRun.processNumber, ranAt);
+                // pop(Scheduler);
+                printf("Process Number %d finished at time %d\n", lastRun.processNumber, getClk());
                 cnt--;
                 isRun = false;
             }
         }
-        else{
-            //lastRun is not the min -- needs to reSchedule
-            if(processTable[lastRun.processNumber].status!=FINISHED){
+        else
+        {
+            // lastRun is not the min
+            // need to reSchedule
+            if (processTable[lastRun.processNumber].status != FINISHED)
+            {
                 Scheduler_processStop(lastRun.processNumber);
-                printf("Process Number %d stopped at time %d\n",lastRun.processNumber,getClk());
-                push(lastRun,Scheduler);
+                if(ranAt != getClk()){ 
+                    printf("Process Number %d will run at time %d\n", lastRun.processNumber, ranAt);
+                    printf("Process Number %d stopped at time %d\n", lastRun.processNumber, getClk());
+                }
+                push(lastRun, Scheduler);
             }
+
             lastRun = p;
-            printf("Process Number %d will run at time %d\n",lastRun.processNumber,getClk());
+            //printf("Process Number %d will run at time %d\n", lastRun.processNumber, getClk());
+            ranAt = getClk();
             Scheduler_processResume(lastRun.processNumber);
+            fflush(stdout);
+            fflush(stdout);
             isRun = true;
         }
     } while (cnt);
 }
-
 /*******************************************************************************
  *                      SIGNAL Handlers
  ********************************************************************************/
