@@ -14,6 +14,11 @@
 #define MAXSIZE 200
 #define NOMOREPROCESS -1
 #define TOTAL_MEMORY_SIZE 1024
+#define NOTALLOCATED   -1
+#define ALLOCATED       1
+#define MAX_PROCESSNUMBER 5000
+#define PROCESS_WAITING   -3
+#define PROCESS_NOTWAITING  -4
 /*******************************************************************************
  *                         Types Declaration                                   *
  *******************************************************************************/
@@ -74,11 +79,13 @@ short lastProcessFlag; // a flag that indicate the last process that is to be re
 // when the scheduler recieves a process with id = -1 just an indicator
 
 queue g_eventQueue;
+ queue tempQ;//thi is RR Queue
 //memory variables
 
 short memory[TOTAL_MEMORY_SIZE];
 short memoryAlgorithm=FIRSTFIT;
-queue memoryWaitiingList;
+short waitingMemoryList[MAX_PROCESSNUMBER];
+process_par waitingProcesses[MAX_PROCESSNUMBER];
 
 // 1 ->>> is alocated , -1 ->> is free
 /*******************************************************************************
@@ -196,7 +203,6 @@ void Scheduler_init(int count,SCHEDULING_ALGORITHM s,int chunk);
 void Scheduler_recieveNewProcess(void * container);
  
 
-
 /**
  * Fork a new process and give its parameters 
  * called when we run the proecss for the first time
@@ -226,8 +232,8 @@ void Scheduler_processFinishHandler(int signum);
  *                    First_Fit Algorithm functuins prototype                                  *
  *******************************************************************************/
 void FirstFit_init();
-short FirstFit_allocateNewProcess(process_par* process);
-short FirstFit_deAllocateProcess(process_par* process);
+short FirstFit_allocateNewProcess(int,int );
+short FirstFit_deAllocateProcess(int);
 
 /*******************************************************************************
  *                      Main Algorithms                                   *
