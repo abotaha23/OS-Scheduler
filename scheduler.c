@@ -397,10 +397,9 @@ void Scheduler_HPF()
         printf("Process Number %d will run at time %d\n", i, getClk()); // these prints are just for the sense of testing
         flag = false;
         Scheduler_processResume(i);
-
-        while (!flag)
-            ;
-        printf("ll\n");
+        //printf("DONE\n");
+        while (!flag);
+        // printf("ll\n");
         printf("Process Number %d finished at time %d\n", i, getClk());
         j--;
     } while (j);
@@ -531,7 +530,6 @@ void Scheduler_SRTN()
             printf("Process Number %d will run at time %d\n", lastRun.processNumber, getClk());
             Scheduler_processResume(lastRun.processNumber);
             fflush(stdout);
-            printf("A&AAAAAT");
             fflush(stdout);
             isRun = true;
         }
@@ -544,7 +542,6 @@ void Scheduler_SRTN()
 
 void Scheduler_processFinishHandler(int signum)
 {
-    printf("First");
     fflush(stdout);
     wait(&stat_loc);
     flag = true;
@@ -563,10 +560,9 @@ void Scheduler_processFinishHandler(int signum)
     e->time = getClk();
     e->type = PROCESS_FINISHED;
     e->waitingTime = processTable[pNumber].waitingTime;
-    printf("ain here ");
     fflush(stdout);
     Queue_push(&g_eventQueue, e);
-
+    
     // deallocate the process
     switch (memoryAlgorithm)
     {
@@ -597,8 +593,7 @@ void Scheduler_processFinishHandler(int signum)
         break;
     case BUDDYMEMORY:
         // call your deAllocation funciton
-
-        buddy_deallocate(0, pNumber);
+        buddy_deallocate(0, pNumber, 10);
 
         // call your deAllocation funciton
         for (int i = 0; i < MAX_PROCESSNUMBER; i++)
@@ -608,6 +603,7 @@ void Scheduler_processFinishHandler(int signum)
 
                 if (buddy_allocate(0, waitingProcesses[i].memSize, i) != -1)
                 {
+
                     printf("process %d will allocate the memory and be pushed to queue\n", pNumber);
                     waitingMemoryList[i] = PROCESS_NOTWAITING;
                     if (Scheduler == HPF || Scheduler == SRTN)
@@ -618,6 +614,7 @@ void Scheduler_processFinishHandler(int signum)
                     {
                         Queue_push(&tempQ, &waitingProcesses[i]);
                     }
+
                     Scheduler_processStart(&waitingProcesses[i]);
                 }
             }

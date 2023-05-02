@@ -281,10 +281,8 @@ void buddy_goBuild(int idx, int pw, int start)
 
 int buddy_allocate(int idx, int reqSize, int pid)
 {
-    printf("HERE 1\n");
     if (reqSize > mem[idx].size)
         return -1;
-    printf("HERE 2\n");
     if (!mem[idx].is_split && !mem[idx].is_allocated && reqSize <= mem[idx].size && reqSize > mem[idx].size / 2)
     {
         printf("Allocate memory from %d to %d for process %d %d\n", mem[idx].startMem, mem[idx].startMem + mem[idx].size - 1, pid, reqSize);
@@ -292,22 +290,21 @@ int buddy_allocate(int idx, int reqSize, int pid)
         mem[idx].processNumber = pid;
         return mem[idx].startMem;
     }
-    printf("HERE 3\n");
     if (mem[idx].is_allocated)
         return -1;
-    printf("HERE 4\n");
     int ans = buddy_allocate(left(idx), reqSize, pid);
-    printf("HERE 5\n");
     if (ans == -1)
         ans = buddy_allocate(right(idx), reqSize, pid);
-    printf("HERE 6\n");
     if (ans != -1)
         mem[idx].is_split = 1;
     return ans;
 }
 
-int buddy_deallocate(int idx, int pid)
+int buddy_deallocate(int idx, int pid, int sz)
 {
+
+    if(sz < 0) return 0;
+
 
     if (mem[idx].is_allocated)
     {
@@ -322,11 +319,12 @@ int buddy_deallocate(int idx, int pid)
         }
     }
 
-    if (buddy_deallocate(left(idx), pid) == 0 && buddy_deallocate(right(idx), pid == 0))
+    if (buddy_deallocate(left(idx),  pid, sz-1) == 0 && buddy_deallocate(right(idx), pid, sz-1) == 0)
     {
         mem[idx].is_allocated = mem[idx].is_split = 0;
         return 0;
     }
+
 
     return 1;
 }
