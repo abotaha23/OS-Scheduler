@@ -116,6 +116,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Exec failed\n");     // execv only returns if it fails
         exit(1);
     }
+    
     int Scheduler_pid = fork();
     if (Scheduler_pid < 0)
     {

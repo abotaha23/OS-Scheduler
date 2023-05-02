@@ -40,6 +40,7 @@ void Scheduler_init(int count, SCHEDULING_ALGORITHM s, int chunk)
     }
     Queue_init(&g_eventQueue);
     FirstFit_init();
+    buddy_goBuild(0, 10, 0);
 }
 /*
 //void Scheduler_processStop();
@@ -83,7 +84,7 @@ int Scheduler_processStart(process_par *newProcess)
     processTable[newProcess->processNumber].status = NOTSTARTED;
     processTable[newProcess->processNumber].waitingTime = 0;
     processTable[newProcess->processNumber].memSize = recProcess.process.memSize;
-    processTable[newProcess->processNumber].waitingTime+=getClk()-newProcess->arrival_time;
+    processTable[newProcess->processNumber].waitingTime += getClk() - newProcess->arrival_time;
     // printf("%dzzz\n", processTable[newProcess->processNumber].memSize);
     index++;
     return pid;
@@ -114,21 +115,25 @@ void Scheduler_recieveNewProcess(void *container)
 
             printf("nowTime %d Recieved process %d memsize is %d\n", getClk(), recProcess.process.processNumber, recProcess.process.memSize);
 
-           
-           processTable[recProcess.process.processNumber].memSize=recProcess.process.memSize;
-           if(recProcess.process.processNumber==3){
-            memoo3=recProcess.process.memSize;
-           }
+            processTable[recProcess.process.processNumber].memSize = recProcess.process.memSize;
+            if (recProcess.process.processNumber == 3)
+            {
+                memoo3 = recProcess.process.memSize;
+            }
             switch (memoryAlgorithm)
             {
             case FIRSTFIT:
                 // try and allocate the memory for it
                 // printf("Outside rec size is%d\n",recProcess.process.memSize);
-                flag = FirstFit_allocateNewProcess(recProcess.process.processNumber,recProcess.process.memSize);
-                        
+                flag = FirstFit_allocateNewProcess(recProcess.process.processNumber, recProcess.process.memSize);
+
                 break;
             case BUDDYMEMORY:
                 // call the function of the allocation
+                int res = buddy_allocate(0, recProcess.process.memSize, recProcess.process.processNumber);
+                flag = res != -1;
+                processTable[recProcess.process.processNumber].memStart = res;
+
                 break;
             }
             // before pushing need to check wheter it was allocated or not
@@ -144,8 +149,8 @@ void Scheduler_recieveNewProcess(void *container)
             else
             {
                 printf("The process %d cannt allocate memory and pushed to waitinglist\n", recProcess.process.processNumber);
-               
-               waitingProcesses[recProcess.process.processNumber]=recProcess.process;
+
+                waitingProcesses[recProcess.process.processNumber] = recProcess.process;
                 waitingMemoryList[recProcess.process.processNumber] = PROCESS_WAITING;
             }
             processNumbers--;
@@ -155,6 +160,7 @@ void Scheduler_recieveNewProcess(void *container)
     {
         // RR
         /*To Do : implement the same logic*/
+        short flag = false;
         queue *processQueue = (queue *)container;
         int last = -1;
         recProcess.process.processNumber = -1;
@@ -166,14 +172,45 @@ void Scheduler_recieveNewProcess(void *container)
             {
                 break; // no process arrived
             }
+            processTable[recProcess.process.processNumber].memSize = recProcess.process.memSize;
             process_par *p = malloc(sizeof(process_par));
             *p = recProcess.process;
-            Queue_push(processQueue, p);
-            Scheduler_processStart(&recProcess.process);
-            kill(processTable[index - 1].pid, SIGTSTP);
-            // printf("%d\n",curSize);
-            processNumbers--;
+            switch (memoryAlgorithm)
+            {
+            case FIRSTFIT:
+                // try and allocate the memory for it
+                // printf("Outside rec size is%d\n",recProcess.process.memSize);
+                flag = FirstFit_allocateNewProcess(recProcess.process.processNumber, recProcess.process.memSize);
+
+                break;
+            case BUDDYMEMORY:
+                // call the function of the allocation
+                int res = buddy_allocate(0, recProcess.process.memSize, recProcess.process.processNumber);
+                flag = res != -1;
+                processTable[recProcess.process.processNumber].memStart = res;
+
+                break;
+            }
+            // before pushing need to check wheter it was allocated or not
+            if (flag)
+            {
+                printf("Process %d allocated memory start %d end %d\n", recProcess.process.processNumber, processTable[recProcess.process.processNumber].memStart, processTable[recProcess.process.processNumber].memStart + recProcess.process.memSize - 1);
+                Queue_push(processQueue, p);
+                Scheduler_processStart(&recProcess.process);
+                kill(processTable[recProcess.process.processNumber].pid, SIGTSTP);
+                // printf("%d\n",curSize);
+                // printf("%d ks\n",memory[0]);
+            }
+            else
+            {
+                printf("The process %d cannt allocate memory and pushed to waitinglist\n", recProcess.process.processNumber);
+
+                waitingProcesses[recProcess.process.processNumber] = recProcess.process;
+                waitingMemoryList[recProcess.process.processNumber] = PROCESS_WAITING;
+            }
         }
+
+        processNumbers--;
     }
 }
 
@@ -278,7 +315,7 @@ void FirstFit_init()
     }
 }
 
-short FirstFit_allocateNewProcess(int processNumber,int processSize)
+short FirstFit_allocateNewProcess(int processNumber, int processSize)
 {
     short flag = false;
     int i, j;
@@ -292,43 +329,45 @@ short FirstFit_allocateNewProcess(int processNumber,int processSize)
         }
         while (j < TOTAL_MEMORY_SIZE && memory[j] == NOTALLOCATED)
             j++;
-            // printf("%d\n",j);
+        // printf("%d\n",j);
         int len = j - i;
         // printf("Len is %d\n",len);
         //  printf("%d %d\n",j,i);
         if (len < processSize)
             continue;
-            printf("%d %d\n ",processSize,len);
-        printf("A7A ya sooree %d\n",processNumber);
+        printf("%d %d\n ", processSize, len);
+        printf("A7A ya sooree %d\n", processNumber);
         for (int it = i; it < i + processSize; it++)
-            {memory[it] = ALLOCATED;
+        {
+            memory[it] = ALLOCATED;
             // printf("hahahahaha\n");
-            }
+        }
         // printf("Flag is set\n");
 
         flag = true;
         break;
     }
+    printf("Awo");
+    fflush(stdout);
     if (flag)
         processTable[processNumber].memStart = i;
     return flag;
 }
 short FirstFit_deAllocateProcess(int processNumber)
-{   
+{
     // if(processNumber==3){
     //     processTable[processNumber].memSize=memoo3;
     // }
     int start = processTable[processNumber].memStart;
-    printf("bro the meSize is %d\n",processTable[processNumber].memSize);
+    printf("bro the meSize is %d\n", processTable[processNumber].memSize);
     // printf("%d %d \n",start,processTable[processNumber].memSize);
     for (int i = start; i < start + processTable[processNumber].memSize; i++)
     {
-            //  printf("%d\n",i);
+        //  printf("%d\n",i);
         memory[i] = NOTALLOCATED;
-    
     }
-    printf("process %d will deallocate its memory from %d to %d\n",processNumber,start,start + processTable[processNumber].memSize-1);
-     
+    printf("process %d will deallocate its memory from %d to %d\n", processNumber, start, start + processTable[processNumber].memSize - 1);
+
     return true;
 }
 /*******************************************************************************
@@ -358,8 +397,9 @@ void Scheduler_HPF()
         printf("Process Number %d will run at time %d\n", i, getClk()); // these prints are just for the sense of testing
         flag = false;
         Scheduler_processResume(i);
-        
-        while (!flag);
+
+        while (!flag)
+            ;
         printf("ll\n");
         printf("Process Number %d finished at time %d\n", i, getClk());
         j--;
@@ -368,6 +408,7 @@ void Scheduler_HPF()
 
 void Scheduler_RR()
 { // 1 2 3 4 5
+signal(SIGUSR1, Scheduler_processFinishHandler);
     queue left, ran;
     Queue_init(&left);
     Queue_init(&ran);
@@ -375,7 +416,7 @@ void Scheduler_RR()
     int cnt = processNumbers;
     while (cnt)
     {
-       
+
         Queue_init(&tempQ);
         Scheduler_recieveNewProcess((void *)&tempQ);
         while (!isEmpty(&tempQ))
@@ -482,12 +523,16 @@ void Scheduler_SRTN()
             {
                 Scheduler_processStop(lastRun.processNumber);
                 printf("Process Number %d stopped at time %d\n", lastRun.processNumber, getClk());
+
                 push(lastRun, Scheduler);
             }
 
             lastRun = p;
             printf("Process Number %d will run at time %d\n", lastRun.processNumber, getClk());
             Scheduler_processResume(lastRun.processNumber);
+            fflush(stdout);
+            printf("A&AAAAAT");
+            fflush(stdout);
             isRun = true;
         }
     } while (cnt);
@@ -499,6 +544,8 @@ void Scheduler_SRTN()
 
 void Scheduler_processFinishHandler(int signum)
 {
+    printf("First");
+    fflush(stdout);
     wait(&stat_loc);
     flag = true;
     // pid_t pid;
@@ -516,8 +563,10 @@ void Scheduler_processFinishHandler(int signum)
     e->time = getClk();
     e->type = PROCESS_FINISHED;
     e->waitingTime = processTable[pNumber].waitingTime;
+    printf("ain here ");
+    fflush(stdout);
     Queue_push(&g_eventQueue, e);
-   
+
     // deallocate the process
     switch (memoryAlgorithm)
     {
@@ -525,26 +574,54 @@ void Scheduler_processFinishHandler(int signum)
         FirstFit_deAllocateProcess(pNumber);
 
         for (int i = 0; i < MAX_PROCESSNUMBER; i++)
-        {   
+        {
             if (waitingMemoryList[i] == PROCESS_WAITING)
             {
 
-                if (FirstFit_allocateNewProcess(i,processTable[i].memSize))
+                if (FirstFit_allocateNewProcess(i, processTable[i].memSize))
                 {
-                    printf("process %d will allocate the memory and be pushed to queue from %d to %d\n",i,processTable[i].memStart,processTable[i].memStart+processTable[i].memSize-1);
+                    printf("process %d will allocate the memory and be pushed to queue from %d to %d\n", i, processTable[i].memStart, processTable[i].memStart + processTable[i].memSize - 1);
                     waitingMemoryList[i] = PROCESS_NOTWAITING;
-                if(Scheduler==HPF||Scheduler==SRTN){
-                    push(waitingProcesses[i],Scheduler);
-                }else{
-                    Queue_push(&tempQ,&waitingProcesses[i]);
-                }
-                Scheduler_processStart(&waitingProcesses[i]);
+                    if (Scheduler == HPF || Scheduler == SRTN)
+                    {
+                        push(waitingProcesses[i], Scheduler);
+                    }
+                    else
+                    {
+                        Queue_push(&tempQ, &waitingProcesses[i]);
+                    }
+                    Scheduler_processStart(&waitingProcesses[i]);
                 }
             }
         }
         break;
     case BUDDYMEMORY:
         // call your deAllocation funciton
+
+        buddy_deallocate(0, pNumber);
+
+        // call your deAllocation funciton
+        for (int i = 0; i < MAX_PROCESSNUMBER; i++)
+        {
+            if (waitingMemoryList[i] == PROCESS_WAITING)
+            {
+
+                if (buddy_allocate(0, waitingProcesses[i].memSize, i) != -1)
+                {
+                    printf("process %d will allocate the memory and be pushed to queue\n", pNumber);
+                    waitingMemoryList[i] = PROCESS_NOTWAITING;
+                    if (Scheduler == HPF || Scheduler == SRTN)
+                    {
+                        push(waitingProcesses[i], Scheduler);
+                    }
+                    else
+                    {
+                        Queue_push(&tempQ, &waitingProcesses[i]);
+                    }
+                    Scheduler_processStart(&waitingProcesses[i]);
+                }
+            }
+        }
 
         // check after if there is a memory to allocate the waiting
     }
