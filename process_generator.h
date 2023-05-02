@@ -6,7 +6,7 @@
  *
  * Description: header file for the process generator
  *
- * Author: Mohamed Samir& Hamdy Salem
+ * Author: Mohamed Samir & Hamdy Salem
  *
  *******************************************************************************/
 #ifndef process_generator
@@ -21,13 +21,9 @@ int processNumbers;
 /*******************************************************************************
  *                      Functions Prototypes                                   *
  *******************************************************************************/
-
 /*
  * Description : Function to clear all resources
-
  */
-
 void clearResources(int);
 
 #endif
-

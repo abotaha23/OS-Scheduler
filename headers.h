@@ -41,27 +41,26 @@ typedef enum
 	SRTN,
 	RR
 } SCHEDULING_ALGORITHM;
+
 typedef struct
 {
 	long mtype;
 	process_par process;
 } msgbuff;
 
-// Define the queue node structure
 struct node
 {
 	void *data;
 	struct node *next;
 };
 
-// Define the queue structure
 typedef struct
 {
 	struct node *front;
 	struct node *rear;
 } queue;
 
-/*Priority Queue implementation with heap     */
+/* Priority Queue implementation with heap */
 
 /*******************************************************************************
  *                        Global Variables                                   *
@@ -89,7 +88,6 @@ void Print_int(void *data)
  *                     type generic queue implementation                                   *
  *******************************************************************************/
 
-// Initialize the queue
 void Queue_init(queue *q)
 {
 	q->front = NULL;
@@ -101,7 +99,6 @@ int isEmpty(queue *q)
 	return q->front == NULL && q->rear == NULL;
 }
 
-// Add an item to the queue
 void Queue_push(queue *q, void *value)
 {
 	struct node *new_node = (struct node *)malloc(sizeof(struct node));
@@ -123,7 +120,6 @@ void Queue_push(queue *q, void *value)
 	q->rear = new_node;
 }
 
-// Remove an item from the queue
 void *Queue_pop(queue *q)
 {
 	if (q->front == NULL)
@@ -141,6 +137,7 @@ void *Queue_pop(queue *q)
 	}
 	return data;
 }
+
 void *Queue_peek(queue *q)
 {
 	if (!q->front)
@@ -149,7 +146,7 @@ void *Queue_peek(queue *q)
 	}
 	return q->front->data;
 }
-// Print the contents of the queue
+
 void Queue_print(queue *q, void (*ptr)(void *))
 {
 	struct node *current_node = q->front;
