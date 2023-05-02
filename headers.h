@@ -33,6 +33,7 @@ typedef struct
 	int arrival_time;
 	int runtime;
 	int priority;
+	int memSize;
 } process_par;
 
 typedef enum
@@ -99,7 +100,7 @@ void Queue_init(queue *q)
 int isEmpty(queue *q)
 {
 	return q->front == NULL && q->rear == NULL;
-}
+}			
 
 // Add an item to the queue
 void Queue_push(queue *q, void *value)

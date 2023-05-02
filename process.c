@@ -23,7 +23,7 @@
 int remainingtime;
 int startTime;
 int runTime;
-
+int processNumber;
 /*******************************************************************************
  *                      SIGNAL Handlers                                   *
  *******************************************************************************/
@@ -51,6 +51,7 @@ int main(int agrc, char * argv[])
     signal(SIGTSTP,Process_stop);
     //TODO it needs to get the remaining time from somewhere
      runTime =atoi(argv[1]);
+     processNumber=atoi(argv[2]);
     // printf("first is %d\n",runTime);
     startTime=getClk();
     remainingtime=runTime;
@@ -61,8 +62,8 @@ int main(int agrc, char * argv[])
         remainingtime = runTime -elapse;
         // printf("Remaining time is %d\n",remainingtime);
     }
-    
+    // kill
     destroyClk(false);
-    exit(1);
-    return 0;
+    kill(getppid(),SIGUSR1);
+    exit(processNumber);
 }
