@@ -43,7 +43,7 @@ void Process_stop(int signum){
  *                      main                                      *
  *******************************************************************************/
 
-int main(int agrc, char * argv[])
+int main(int argc, char * argv[])
 {
     initClk();
     signal(SIGCONT,Process_resume);
@@ -64,4 +64,6 @@ int main(int agrc, char * argv[])
     kill(getppid(),SIGUSR1);
     exit(processNumber);
 }
+
+
 

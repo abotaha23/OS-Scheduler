@@ -25,7 +25,7 @@ void Scheduler_init(int count, SCHEDULING_ALGORITHM s, int chunk)
     signal(SIGUSR1, Scheduler_processFinishHandler);
 
     Scheduler = s;
-    processNumbers = count;
+    original_process_numbers = processNumbers = count;
     timeChunk = chunk;
 
     key_t key_id;
@@ -182,7 +182,7 @@ void Scheduler_generateOutputFiles()
             break;
         case PROCESS_FINISHED:
             int turnAround = processTable[processNumber].finishTime - processTable[processNumber].arrival_time;
-            double weightedTurnAround = ((double)turnAround) / (double)processTable[processNumber].excutionTime;
+            double weightedTurnAround = processTable[processNumber].excutionTime? ((double)turnAround) / (double)processTable[processNumber].excutionTime : 0;
             int int_part=(int)weightedTurnAround;
             int dec_part=(int)round((weightedTurnAround-int_part)*100);
             processTable[processNumber].TA = turnAround;
@@ -193,21 +193,25 @@ void Scheduler_generateOutputFiles()
     }
     fclose(Scheduler_file);
 
+    processNumbers = original_process_numbers;
     Scheduler_file = fopen("scheduler.perf", "w");
-    double cpu_util = 100, avg_WTA = 0, avg_waiting = 0, std_WTA = 0;
-    for (int i = 0; i < processNumbers; i++) {
-        // TODO : calculate the CPU Utilization.. needs update PCB
+    double cpu_util = 0, avg_WTA = 0, avg_waiting = 0, std_WTA = 0;
+    for (int i = 1; i <= processNumbers; i++) {
+        cpu_util += (((double)processTable[i].excutionTime) / ((double)total_time));
         avg_WTA += (((double)processTable[i].WTA) / ((double)processNumbers));
         avg_waiting += (((double)processTable[i].waitingTime) / ((double)processNumbers));
     }
+    cpu_util *= 100;
     fprintf(Scheduler_file, "CPU Utilization = %d.%02d%\n", (int)cpu_util, (int)round((cpu_util - (int)cpu_util) * 100));
     fprintf(Scheduler_file, "Avg WTA = %d.%02d\n", (int)avg_WTA, (int)round((avg_WTA - (int)avg_WTA) * 100));
     fprintf(Scheduler_file, "Avg Waiting = %d.%02d\n", (int)avg_waiting, (int)round((avg_waiting - (int)avg_waiting) * 100));
     for (int i = 0; i < processNumbers; i++) {
-        std_WTA += (((double)(processTable[i].WTA - avg_WTA)) / ((double)(processNumbers - 1)));
+        std_WTA += (((double)(processTable[i].WTA - avg_WTA)) * ((double)(processTable[i].WTA - avg_WTA)) / ((double)(processNumbers)));
     }
     fprintf(Scheduler_file, "Std WTA = %d.%02d\n", (int)std_WTA, (int)round((std_WTA - (int)std_WTA) * 100));
     fclose(Scheduler_file);
+
+    Queue_destroy(&g_eventQueue);
 }
 
 /*******************************************************************************
@@ -280,7 +284,12 @@ void Scheduler_RR()
         if(processTable[processNumber].remainingTime>0){
             Queue_push(&ran, (void*)toRun);
         } else cnt--;
+
+        Queue_destroy(&tempQ);
     }
+
+    Queue_destroy(&left);
+    Queue_destroy(&ran);
 }
 
 void Scheduler_SRTN () {
@@ -376,9 +385,8 @@ int main(int argc, char *argv[])
         Scheduler_RR();
         break;
     }
+    total_time = getClk();
     Scheduler_generateOutputFiles();
     destroyClk(true);
 }
-
-
 

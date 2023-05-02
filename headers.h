@@ -66,6 +66,7 @@ typedef struct
  *                        Global Variables                                   *
  *******************************************************************************/
 
+int total_time;
 ///==============================
 // don't mess with this variable//
 int *shmaddr; //

@@ -69,6 +69,7 @@ int index = 1;         // current index in the processTable
 short lastProcessFlag; // a flag that indicate the last process that is to be received
 // it is updated in the scheduler_receiveNewProcess
 // when the scheduler receives a process with id = -1 just an indicator
+int original_process_numbers;
 queue g_eventQueue;
 
 /*******************************************************************************
