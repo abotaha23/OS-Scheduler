@@ -39,7 +39,9 @@ void Scheduler_init(int count, SCHEDULING_ALGORITHM s, int chunk)
         exit(-1);
     }
     Queue_init(&g_eventQueue);
-    FirstFit_init();
+    //FirstFit_init();
+
+    buddy_goBuild(0, 10, 0);
 }
 /*
 //void Scheduler_processStop();
@@ -124,6 +126,12 @@ void Scheduler_recieveNewProcess(void *container)
                         
                 break;
             case BUDDYMEMORY:
+                int res = buddy_allocate(0, recProcess.process.memSize, recProcess.process.processNumber);
+                flag= res != -1;
+                processTable[recProcess.process.processNumber].memStart = res;
+                
+                // call the function of the allocation
+                break;
                 // call the function of the allocation
                 break;
             }
@@ -534,8 +542,27 @@ void Scheduler_processFinishHandler(int signum)
         }
         break;
     case BUDDYMEMORY:
-        // call your deAllocation funciton
+        buddy_deallocate(0, pNumber);
 
+        // call your deAllocation funciton
+for (int i = 0; i < MAX_PROCESSNUMBER; i++)
+        {   
+            if (waitingMemoryList[i] == PROCESS_WAITING)
+            {
+
+                if (buddy_allocate(0, waitingProcesses[i].memSize, i) != -1)
+                {
+                    printf("process %d will allocate the memory and be pushed to queue\n",pNumber);
+                    waitingMemoryList[i] = PROCESS_NOTWAITING;
+                if(Scheduler==HPF||Scheduler==SRTN){
+                    push(waitingProcesses[i],Scheduler);
+                }else{
+                    Queue_push(&tempQ,&waitingProcesses[i]);
+                }
+                Scheduler_processStart(&waitingProcesses[i]);
+                }
+            }
+        }
         // check after if there is a memory to allocate the waiting
     }
 }
