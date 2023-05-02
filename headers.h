@@ -33,6 +33,7 @@ typedef struct
 	int arrival_time;
 	int runtime;
 	int priority;
+	int memSize;
 } process_par;
 
 typedef enum
@@ -99,7 +100,7 @@ void Queue_init(queue *q)
 int isEmpty(queue *q)
 {
 	return q->front == NULL && q->rear == NULL;
-}
+}			
 
 // Add an item to the queue
 void Queue_push(queue *q, void *value)
@@ -195,7 +196,7 @@ void initClk()
 	while ((int)shmid == -1)
 	{
 		// Make sure that the clock exists
-		printf("Wait! The clock is not initialized yet!\n");
+		printf("Wait! The clock not initialized yet!\n");
 		sleep(1);
 		shmid = shmget(SHKEY, 4, 0444);
 	}

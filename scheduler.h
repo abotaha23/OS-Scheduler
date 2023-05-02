@@ -10,9 +10,15 @@
 
 #ifndef scheduler
 #define scheduler
-#include "headers.h"
+#include "headers.h"    
 #define MAXSIZE 200
 #define NOMOREPROCESS -1
+#define TOTAL_MEMORY_SIZE 1024
+#define NOTALLOCATED   -1
+#define ALLOCATED       1
+#define MAX_PROCESSNUMBER 5000
+#define PROCESS_WAITING   -3
+#define PROCESS_NOTWAITING  -4
 /*******************************************************************************
  *                         Types Declaration                                   *
  *******************************************************************************/
@@ -33,6 +39,8 @@ int lastTimeStopped;//indicator to calculate the waiting time for each process
 int lastTimeStartted;
 int TA;
 int WTA;
+int memSize;
+int memStart;
 }PCB;
 
 // 2 4 1 0 5 
@@ -47,7 +55,7 @@ int remainingTime;
 int time;
 }Event;
 
-
+typedef enum{FIRSTFIT,BUDDYMEMORY}Memory_Algorithm;
 
 int curSize = 0;
 process_par heap[MAXSIZE];
@@ -71,8 +79,15 @@ short lastProcessFlag; // a flag that indicate the last process that is to be re
 // when the scheduler recieves a process with id = -1 just an indicator
 
 queue g_eventQueue;
+ queue tempQ;//thi is RR Queue
+//memory variables
 
+short memory[TOTAL_MEMORY_SIZE];
+short memoryAlgorithm=FIRSTFIT;
+short waitingMemoryList[MAX_PROCESSNUMBER];
+process_par waitingProcesses[MAX_PROCESSNUMBER];
 
+// 1 ->>> is alocated , -1 ->> is free
 /*******************************************************************************
  *                     priority Queue implementation                                     *
  *******************************************************************************/
@@ -100,7 +115,7 @@ static int right(int i)
 {
     return 2*i+2;
 }
-
+int memoo3;
 // 1--> 1 > 2
 // 0--> 1 == 2
 // -1--> 1 < 2
@@ -188,7 +203,6 @@ void Scheduler_init(int count,SCHEDULING_ALGORITHM s,int chunk);
 void Scheduler_recieveNewProcess(void * container);
  
 
-
 /**
  * Fork a new process and give its parameters 
  * called when we run the proecss for the first time
@@ -212,6 +226,14 @@ void Scheduler_generateOutputFiles();
 
 
 void Scheduler_processFinishHandler(int signum);
+
+
+/*******************************************************************************
+ *                    First_Fit Algorithm functuins prototype                                  *
+ *******************************************************************************/
+void FirstFit_init();
+short FirstFit_allocateNewProcess(int,int );
+short FirstFit_deAllocateProcess(int);
 
 /*******************************************************************************
  *                      Main Algorithms                                   *
